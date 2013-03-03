@@ -6,19 +6,16 @@ make: Leaving directory `/home/yyhuang/compiler/PA2'
 submission: ..
 
 	-1 (escaped_chars_in_comment)	 escaped chars in comment
-	-1 (escapednull)	 escaped null char in a string
 	-1 (lineno2)	 line number test 2
 	-1 (lineno3)	 line number test 3
 	-1 (longcomment)	 a long comment test
 	-1 (nestedcomment)	 nested comment
-	-1 (null_in_string)	 null char in string
-	-1 (null_in_string_followed_by_tokens)	 null char in string, then tokens
 	-1 (opencomment)	 no matching closing comment
 	-1 (twice_512_nested_comments)	 many nested comments
 	-1 (wq0607-c2)	 sequences of block comments and strings
 =====================================================================
-You got a score of 52 out of 63.
+You got a score of 55 out of 63.
 
 Submit code: 
-52:9a1158154dfa42caddbd0694a4e9bdc8
+55:b53b3a3d6ab90ce0268229151c9bde11
 

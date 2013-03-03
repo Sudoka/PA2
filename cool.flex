@@ -208,13 +208,19 @@ WHITESPACE      [ \f\r\t\v]+
                                 }
                             }
 
-<str>\\b                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\b';
-<str>\\t                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\t';
-<str>\\n                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\n';
-<str>\\f                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\f';
-<str>\\.                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = *(yytext+1);
+<str>\0                     nullchar = true; /* printf("1 current char: %c, %d\n", *yytext, *yytext); */
+<str>\\b                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\b'; /*printf("2 current char: %c, %d\n", *yytext, *yytext); */
+<str>\\t                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\t'; /*printf("3 current char: %c, %d\n", *yytext, *yytext); */
+<str>\\n                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\n'; /*printf("4 current char: %c, %d\n", *yytext, *yytext); */
+<str>\\f                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\f'; /*printf("5 current char: %c, %d\n", *yytext, *yytext); */
+<str>\\.                    {
+                                /*printf("6 current char: %c, %x\n", *yytext, *yytext); */
+                                if ( *(yytext+1) == '\0' )
+                                    nullchar = true;
+                                else if ( ++string_len < MAX_STR_CONST ) 
+                                    *string_buf_ptr++ = *(yytext+1); 
+                            }
 
-<str>\0                     nullchar = true;
 
 <str>\\[^\\\n\"]+$          {
                                 /*printf("a: %s\n", yytext);*/
@@ -237,9 +243,10 @@ WHITESPACE      [ \f\r\t\v]+
                                 ++curr_lineno;
                             }
 
-<str>[^\\|\n|\"]+           {
+<str>[^\0\\\n\"]+           {
                                 char* ptr = yytext;
                                 while (*ptr) {
+                                    /* printf("current char: %c, %x\n", *ptr, *ptr); */
                                     if ( ++string_len < MAX_STR_CONST )
                                         *string_buf_ptr++ = *ptr++;
                                     else
