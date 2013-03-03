@@ -45,6 +45,7 @@ extern YYSTYPE cool_yylval;
 
 /* to determine if we have handled the eof state or not */
 bool eof_state = false;
+bool nullchar = false;
 int string_len = 0;
 
 
@@ -121,6 +122,7 @@ WHITESPACE      [ \f\r\t\v]+
   *  The multiple-character operators.
   */
 
+"=>"	                    { return (DARROW); }
 ";"                         { return ';'; }
 "{"                         { return '{'; }
 "}"                         { return '}'; }
@@ -128,18 +130,19 @@ WHITESPACE      [ \f\r\t\v]+
 ":"                         { return ':'; }
 "("                         { return '('; }
 ")"                         { return ')'; }
-"->"	                    { return (DARROW); }
-"<-"                        { return (ASSIGN); }
 "."                         { return '.'; }
 "@"                         { return '@'; }
 "~"                         { return '~'; }
+{ISVOID}                    { return (ISVOID); }
 "*"                         { return '*'; }
 "/"                         { return '/'; }
 "+"                         { return '+'; }
 "-"                         { return '-'; }
+"<="                        { return (LE); }
 "<"                         { return '<'; }
 "="                         { return '='; }
-">"                         { return '>'; }
+{NOT}                       { return (NOT); }
+"<-"                        { return (ASSIGN); }
 
  /*
   * Keywords are case-insensitive except for the values true and false,
@@ -152,7 +155,6 @@ WHITESPACE      [ \f\r\t\v]+
 {IF}                        { return (IF); }
 {IN}                        { return (IN); }
 {INHERITS}                  { return (INHERITS); }
-{ISVOID}                    { return (ISVOID); }
 {LET}                       { return (LET); }
 {LOOP}                      { return (LOOP); }
 {POOL}                      { return (POOL); }
@@ -184,13 +186,18 @@ WHITESPACE      [ \f\r\t\v]+
                                 /* string starts */
                                 string_buf_ptr = string_buf;
                                 string_len = 0;
+                                nullchar = false;
                                 BEGIN(str);
                             }
 
 <str>\"                     {
                                 /* string ends */
                                 BEGIN(INITIAL);
-                                if ( string_len < MAX_STR_CONST ) {
+                                if ( nullchar ) {
+                                    cool_yylval.error_msg = "String contains null character";
+                                    return (ERROR);
+                                }
+                                else if ( string_len < MAX_STR_CONST ) {
                                     *string_buf_ptr = '\0';
                                     cool_yylval.symbol = stringtable.add_string(string_buf);
                                     return (STR_CONST);
@@ -209,19 +216,17 @@ WHITESPACE      [ \f\r\t\v]+
  /* TODO \" in string */
 
 
-<str>\0                     {
-                                BEGIN(INITIAL);
-                                cool_yylval.error_msg = "String contains null character";
-                                return (ERROR);
-                            }
+<str>\0                     nullchar = true;
 
-<str>\\[^\n]+               {
+<str>\\[^\n\"]+$            {
+                                /*printf("a: %s\n", yytext);*/
                                 BEGIN(INITIAL);
                                 cool_yylval.error_msg = "Unterminated string constant";
                                 return (ERROR);
                             }
 
 <str>\n                     {
+                                /*printf("b: %s\n", yytext);*/
                                 BEGIN(INITIAL);
                                 ++curr_lineno;
                                 cool_yylval.error_msg = "Unterminated string constant";
