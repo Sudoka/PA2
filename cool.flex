@@ -74,24 +74,13 @@ NEW             [nN][eE][wW]
 FALSE           f[aA][lL][sS][eE]
 TRUE            t[rR][uU][eE]
 
-DOT             "."
-AT              "@"
-TILD            "~"
 ISVOID          [iI][sS][vV][oO][iI][dD]
-MULTIDIVIDE     "*"|"/"
-PLUSMINUS       "+"|"-"
-LESSEQUAL       "<="|"<"|"="
 NOT             [nN][oO][tT]
-ASSIGN          <-
-
-DARROW          =>
 
 DIGIT           [0-9]
 OBJECTID        [a-z][a-zA-Z0-9_]*
 TYPEID          [A-Z][a-zA-Z0-9_]*
 WHITESPACE      [ \f\r\t\v]+
-
-STRING          \"[^\b\t\n\f]+\"
 
 %x comment
 %x str
@@ -132,9 +121,25 @@ STRING          \"[^\b\t\n\f]+\"
   *  The multiple-character operators.
   */
 
-{DARROW}	                { return (DARROW); }
-{ASSIGN}                    { return (ASSIGN); }
-
+";"                         { return ';'; }
+"{"                         { return '{'; }
+"}"                         { return '}'; }
+","                         { return ','; }
+":"                         { return ':'; }
+"("                         { return '('; }
+")"                         { return ')'; }
+"->"	                    { return (DARROW); }
+"<-"                        { return (ASSIGN); }
+"."                         { return '.'; }
+"@"                         { return '@'; }
+"~"                         { return '~'; }
+"*"                         { return '*'; }
+"/"                         { return '/'; }
+"+"                         { return '+'; }
+"-"                         { return '-'; }
+"<"                         { return '<'; }
+"="                         { return '='; }
+">"                         { return '>'; }
 
  /*
   * Keywords are case-insensitive except for the values true and false,
@@ -157,6 +162,16 @@ STRING          \"[^\b\t\n\f]+\"
 {ESAC}                      { return (ESAC); }
 {NEW}                       { return (NEW); }
 {OF}                        { return (OF); }
+
+{TRUE}                      {
+                                cool_yylval.boolean = true;
+                                return (BOOL_CONST);
+                            }
+
+{FALSE}                     {
+                                cool_yylval.boolean = false;
+                                return (BOOL_CONST);
+                            }
 
  /*
   *  String constants (C syntax)
@@ -191,6 +206,14 @@ STRING          \"[^\b\t\n\f]+\"
 <str>\\t                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\t';
 <str>\\n                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\n';
 <str>\\f                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\f';
+ /* TODO \" in string */
+
+
+<str>\0                     {
+                                BEGIN(INITIAL);
+                                cool_yylval.error_msg = "String contains null character";
+                                return (ERROR);
+                            }
 
 <str>\\[^\n]+               {
                                 BEGIN(INITIAL);
@@ -202,12 +225,6 @@ STRING          \"[^\b\t\n\f]+\"
                                 BEGIN(INITIAL);
                                 ++curr_lineno;
                                 cool_yylval.error_msg = "Unterminated string constant";
-                                return (ERROR);
-                            }
-
-<str>\0                     {
-                                BEGIN(INITIAL);
-                                cool_yylval.error_msg = "String contains null character";
                                 return (ERROR);
                             }
 
