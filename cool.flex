@@ -43,15 +43,16 @@ extern YYSTYPE cool_yylval;
  *  Add Your own definitions here
  */
 
+/* to determine if we have handled the eof state or not */
+bool eof_state = false;
+int string_len = 0;
+
 
 %}
 
 /*
  * Define names for regular expressions here.
  */
-
-COMMENT_START   "(*"
-COMMENT_END     "*)"
 
 
 CLASS           [cC][lL][aA][sS][sS]
@@ -92,24 +93,47 @@ WHITESPACE      [ \f\r\t\v]+
 
 STRING          \"[^\b\t\n\f]+\"
 
+%x comment
+%x str
+
 %%
 
  /*
   *  Nested comments
   */
 
---.*--      printf("comment\n");
+--.*                        /* one line comment */
 
-{COMMENT_START} printf("comment start\n");
-
-{COMMENT_END}   printf("comment start\n");
+"(*"                        BEGIN(comment);
+<comment>[^*\n]*            /* everything except * and \n */
+<comment>"*"+[^*)\n]*       /* everything followed by * but not ) or \n */
+<comment>\n                 ++curr_lineno;
+<comment><<EOF>>            {
+                                if ( !eof_state ) {
+                                    eof_state = true;
+                                    cool_yylval.error_msg = "EOF in comment";
+                                    return (ERROR);
+                                }
+                                else {
+                                    yyterminate();
+                                }
+                            }
+<comment>"*"+")"            {   
+                                /* * followed by ) */
+                                BEGIN(INITIAL);
+                            }
+"*)"                        {
+                                /* error handling */
+                                cool_yylval.error_msg = "Unmatched *)";
+                                return (ERROR);
+                            }
 
  /*
   *  The multiple-character operators.
   */
 
-{DARROW}		{ return (DARROW); }
-{ASSIGN}        { return (ASSIGN); }
+{DARROW}	                { return (DARROW); }
+{ASSIGN}                    { return (ASSIGN); }
 
 
  /*
@@ -117,22 +141,22 @@ STRING          \"[^\b\t\n\f]+\"
   * which must begin with a lower-case letter.
   */
 
-{CLASS}         { return (CLASS); }
-{ELSE}          { return (ELSE); }
-{FI}            { return (FI); }
-{IF}            { return (IF); }
-{IN}            { return (IN); }
-{INHERITS}      { return (INHERITS); }
-{ISVOID}        { return (ISVOID); }
-{LET}           { return (LET); }
-{LOOP}          { return (LOOP); }
-{POOL}          { return (POOL); }
-{THEN}          { return (THEN); }
-{WHILE}         { return (WHILE); }
-{CASE}          { return (CASE); }
-{ESAC}          { return (ESAC); }
-{NEW}           { return (NEW); }
-{OF}            { return (OF); }
+{CLASS}                     { return (CLASS); }
+{ELSE}                      { return (ELSE); }
+{FI}                        { return (FI); }
+{IF}                        { return (IF); }
+{IN}                        { return (IN); }
+{INHERITS}                  { return (INHERITS); }
+{ISVOID}                    { return (ISVOID); }
+{LET}                       { return (LET); }
+{LOOP}                      { return (LOOP); }
+{POOL}                      { return (POOL); }
+{THEN}                      { return (THEN); }
+{WHILE}                     { return (WHILE); }
+{CASE}                      { return (CASE); }
+{ESAC}                      { return (ESAC); }
+{NEW}                       { return (NEW); }
+{OF}                        { return (OF); }
 
  /*
   *  String constants (C syntax)
@@ -141,28 +165,104 @@ STRING          \"[^\b\t\n\f]+\"
   *
   */
 
-{STRING}        {
-                    printf("A string: %s\n", yytext);
-                    cool_yylval.symbol = stringtable.add_string(yytext);
-                    return STR_CONST;
-                }
+\"                          {
+                                /* string starts */
+                                string_buf_ptr = string_buf;
+                                string_len = 0;
+                                BEGIN(str);
+                            }
 
-{DIGIT}+        {
-                    printf("An integer: %s (%d)\n", yytext, atoi(yytext));
-                    cool_yylval.symbol = inttable.add_string(yytext);
-                    return INT_CONST;
-                }
+<str>\"                     {
+                                /* string ends */
+                                BEGIN(INITIAL);
+                                if ( string_len < MAX_STR_CONST ) {
+                                    *string_buf_ptr = '\0';
+                                    cool_yylval.symbol = stringtable.add_string(string_buf);
+                                    return (STR_CONST);
+                                }
+                                else {
+                                    cool_yylval.error_msg = "String constant too long";
+                                    return (ERROR);
+                                }
+                            }
 
-{OBJECTID}      printf("An identifier: %s\n", yytext);
+<str>\\0                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '0';
+<str>\\b                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\b';
+<str>\\t                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\t';
+<str>\\n                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\n';
+<str>\\f                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\f';
 
-{TYPEID}        printf("An identifier: %s\n", yytext);
+<str>\\[^\n]+               {
+                                BEGIN(INITIAL);
+                                cool_yylval.error_msg = "Unterminated string constant";
+                                return (ERROR);
+                            }
 
-\n              ++curr_lineno;
+<str>\n                     {
+                                BEGIN(INITIAL);
+                                ++curr_lineno;
+                                cool_yylval.error_msg = "Unterminated string constant";
+                                return (ERROR);
+                            }
 
-{WHITESPACE}    /* whitespace */
+<str>\0                     {
+                                BEGIN(INITIAL);
+                                cool_yylval.error_msg = "String contains null character";
+                                return (ERROR);
+                            }
 
-.               printf("Unrecognized character: %s\n", yytext);
+<str>\\\n                   ++curr_lineno;
 
+<str>[^\\|\n|\"]+           {
+                                char* ptr = yytext;
+                                while (*ptr) {
+                                    if ( ++string_len < MAX_STR_CONST )
+                                        *string_buf_ptr++ = *ptr++;
+                                    else
+                                        *ptr++;
+                                }
+                            }
+
+<str><<EOF>>                {
+                                if ( !eof_state ) {
+                                    eof_state = true;
+                                    cool_yylval.error_msg = "Unterminated string constant";
+                                    /*cool_yylval.error_msg = "EOF in string constant";*/
+                                    return (ERROR);
+                                }
+                                else {
+                                    yyterminate();
+                                }
+                            }
+
+ /*
+  * Others
+  *
+  */
+
+{DIGIT}+                    {
+                                cool_yylval.symbol = inttable.add_string(yytext);
+                                return (INT_CONST);
+                            }
+                            
+{OBJECTID}                  {
+                                cool_yylval.symbol = idtable.add_string(yytext);
+                                return (OBJECTID);
+                            }
+                            
+{TYPEID}                    {
+                                cool_yylval.symbol = idtable.add_string(yytext);
+                                return (TYPEID);
+                            }
+                            
+\n                          ++curr_lineno;
+                            
+{WHITESPACE}                /* whitespace */
+                            
+.                           {
+                                cool_yylval.error_msg = yytext;
+                                return (ERROR);
+                            }
 
 
 %%
