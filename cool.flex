@@ -212,7 +212,7 @@ WHITESPACE      [ \f\r\t\v]+
 <str>\\t                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\t';
 <str>\\n                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\n';
 <str>\\f                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\f';
-<str>\\[a-zA-Z0-9"\\]       if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = *(yytext+1);
+<str>\\.                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = *(yytext+1);
 
 <str>\0                     nullchar = true;
 

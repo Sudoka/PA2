@@ -8,7 +8,6 @@ submission: ..
 	-1 (backslash2)	 more backslashes in strings
 	-1 (escaped_chars_in_comment)	 escaped chars in comment
 	-1 (escapednull)	 escaped null char in a string
-	-1 (escapedunprintables)	 escaped nonprinting chars
 	-1 (lineno2)	 line number test 2
 	-1 (lineno3)	 line number test 3
 	-1 (longcomment)	 a long comment test
@@ -20,10 +19,9 @@ submission: ..
 	-1 (stringwithescapes)	 a long string with escaped characters
 	-1 (twice_512_nested_comments)	 many nested comments
 	-1 (wq0607-c2)	 sequences of block comments and strings
-	-1 (wq0607-c4)	 sequence of quotes, backslashes, and double-dash comment symbols
 =====================================================================
-You got a score of 47 out of 63.
+You got a score of 49 out of 63.
 
 Submit code: 
-47:67c6a1e7ce56d3d6fa748ab6d9af3fd7
+49:f457c545a9ded88f18ecee47145a72c0
 
