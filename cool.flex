@@ -208,13 +208,11 @@ WHITESPACE      [ \f\r\t\v]+
                                 }
                             }
 
-<str>\\0                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '0';
 <str>\\b                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\b';
 <str>\\t                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\t';
 <str>\\n                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\n';
 <str>\\f                    if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = '\f';
- /* TODO \" in string */
-
+<str>\\[a-zA-Z0-9"\\]       if ( ++string_len < MAX_STR_CONST ) *string_buf_ptr++ = *(yytext+1);
 
 <str>\0                     nullchar = true;
 
@@ -233,7 +231,11 @@ WHITESPACE      [ \f\r\t\v]+
                                 return (ERROR);
                             }
 
-<str>\\\n                   ++curr_lineno;
+<str>\\\n                   {
+                                if ( ++string_len < MAX_STR_CONST )
+                                    *string_buf_ptr++ = '\n';
+                                ++curr_lineno;
+                            }
 
 <str>[^\\|\n|\"]+           {
                                 char* ptr = yytext;

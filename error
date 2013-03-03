@@ -5,12 +5,9 @@ make: Leaving directory `/home/yyhuang/compiler/PA2'
 =====================================================================
 submission: ..
 
-	-1 (backslash)	 various backslashes in strings
 	-1 (backslash2)	 more backslashes in strings
-	-1 (comment_in_string)	 comment in string
 	-1 (escaped_chars_in_comment)	 escaped chars in comment
 	-1 (escapednull)	 escaped null char in a string
-	-1 (escapedquote)	 escaped quote
 	-1 (escapedunprintables)	 escaped nonprinting chars
 	-1 (lineno2)	 line number test 2
 	-1 (lineno3)	 line number test 3
@@ -20,15 +17,13 @@ submission: ..
 	-1 (null_in_string)	 null char in string
 	-1 (null_in_string_followed_by_tokens)	 null char in string, then tokens
 	-1 (opencomment)	 no matching closing comment
-	-1 (pathologicalstrings)	 some pathological strings
 	-1 (stringwithescapes)	 a long string with escaped characters
 	-1 (twice_512_nested_comments)	 many nested comments
 	-1 (wq0607-c2)	 sequences of block comments and strings
-	-1 (wq0607-c3)	 sequence of quotes and backslashes
 	-1 (wq0607-c4)	 sequence of quotes, backslashes, and double-dash comment symbols
 =====================================================================
-You got a score of 42 out of 63.
+You got a score of 47 out of 63.
 
 Submit code: 
-42:a1d0c6e83f027327d8461063f4ac58a6
+47:67c6a1e7ce56d3d6fa748ab6d9af3fd7
 
