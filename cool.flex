@@ -216,7 +216,7 @@ WHITESPACE      [ \f\r\t\v]+
 
 <str>\0                     nullchar = true;
 
-<str>\\[^\n\"]+$            {
+<str>\\[^\\\n\"]+$          {
                                 /*printf("a: %s\n", yytext);*/
                                 BEGIN(INITIAL);
                                 cool_yylval.error_msg = "Unterminated string constant";
