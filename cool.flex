@@ -47,6 +47,7 @@ extern YYSTYPE cool_yylval;
 bool eof_state = false;
 bool nullchar = false;
 int string_len = 0;
+int comment_level = 0;
 
 
 %}
@@ -92,31 +93,42 @@ WHITESPACE      [ \f\r\t\v]+
   *  Nested comments
   */
 
---.*                        /* one line comment */
+--.*                                /* one line comment */
 
-"(*"                        BEGIN(comment);
-<comment>[^*\n]*            /* everything except * and \n */
-<comment>"*"+[^*)\n]*       /* everything followed by * but not ) or \n */
-<comment>\n                 ++curr_lineno;
-<comment><<EOF>>            {
-                                if ( !eof_state ) {
-                                    eof_state = true;
-                                    cool_yylval.error_msg = "EOF in comment";
-                                    return (ERROR);
-                                }
-                                else {
-                                    yyterminate();
-                                }
-                            }
-<comment>"*"+")"            {   
-                                /* * followed by ) */
-                                BEGIN(INITIAL);
-                            }
-"*)"                        {
-                                /* error handling */
-                                cool_yylval.error_msg = "Unmatched *)";
-                                return (ERROR);
-                            }
+"(*"                                {
+                                        BEGIN(comment);
+                                        ++comment_level;
+                                    }
+<comment>"(*"                       {
+                                        ++comment_level;
+                                        /* printf("start:%s, comment: %d\n", yytext, comment_level); */
+                                    }
+<comment>\\.                        /* printf("1:%s\n", yytext); */
+<comment>[(\\]                      /* printf("2:%s\n", yytext); */
+<comment>[^*\n(\\]*                 /* printf("3:%s\n", yytext); */
+<comment>"*"+[^*)\n\\*]*            /* printf("4:%s\n", yytext); */
+<comment>\n                         ++curr_lineno;
+<comment><<EOF>>                    {
+                                        if ( !eof_state ) {
+                                            eof_state = true;
+                                            cool_yylval.error_msg = "EOF in comment";
+                                            return (ERROR);
+                                        }
+                                        else {
+                                            yyterminate();
+                                        }
+                                    }
+<comment>"*"+")"                    {   
+                                        --comment_level;
+                                        /* printf("comment: %d\n", comment_level); */
+                                        if ( comment_level == 0 )
+                                            BEGIN(INITIAL);
+                                    }
+"*)"                                {
+                                        /* error handling */
+                                        cool_yylval.error_msg = "Unmatched *)";
+                                        return (ERROR);
+                                    }
 
  /*
   *  The multiple-character operators.
